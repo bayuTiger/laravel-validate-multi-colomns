@@ -6,7 +6,7 @@
 // envのDB接続部を書き換えておく
 php artisan migrate:fresh
 composer require laravel/ui
-php artisan ui bootstrap
+php artisan ui vue --auth
 npm install
 npm install resolve-url-loader@^5.0.0 --save-dev --legacy-peer-deps
 npm run dev
