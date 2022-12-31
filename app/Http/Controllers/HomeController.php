@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Http\Requests\Home\StoreRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,9 +29,10 @@ class HomeController extends Controller
         return view('home');
     }
 
-    public function store(Request $request)
+    public function store(StoreRequest $request)
     {
         $params = [
+            'login_id' => $request->login_id,
             'name' => $request->name,
             'email' => $request->email,
         ];
@@ -41,11 +42,11 @@ class HomeController extends Controller
 
         DB::transaction(function () use ($request, $params) {
             User::updateOrCreate([
-                'name' => $request->name,
+                'email' => $request->email,
             ], $params);
         });
 
-        $saved_user = User::firstWhere('name', $request->input(['name']));
+        $saved_user = User::firstWhere('email', $request->input(['email']));
         $status = 'ユーザー情報の登録に成功しました！';
 
         return redirect()->route('home')->with(compact('saved_user', 'status'));

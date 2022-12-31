@@ -17,6 +17,24 @@
 
                         <form method="POST" action="{{ route('store') }}">
                             @csrf
+                            {{-- ログインID --}}
+                            <div class="row mb-3">
+                                <label for="name"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('ログインID') }}</label>
+
+                                <div class="col-md-6">
+                                    <input v-model="login_id" id="login_id" type="text"
+                                        class="form-control @error('login_id') is-invalid @enderror" name="login_id"
+                                        required>
+
+                                    @error('login_id')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
                             {{-- 名前 --}}
                             <div class="row mb-3">
                                 <label for="name"
@@ -58,8 +76,8 @@
 
                                 <div class="col-md-6">
                                     <input v-model="password" id="password" type="password"
-                                        class="form-control @error('password') is-invalid @enderror" name="password" @if(session('saved_user')) placeholder="更新が不要な場合は未入力にしてください" @endif
-                                        required>
+                                        class="form-control @error('password') is-invalid @enderror" name="password"
+                                        @if (session('saved_user')) placeholder="更新が不要な場合は未入力にしてください" @endif>
 
                                     @error('password')
                                         <span class="invalid-feedback" role="alert">
@@ -84,6 +102,7 @@
             el: '#app',
             data: () => {
                 return {
+                    login_id: '{{ old('login_id') ?? (session('saved_user')->login_id ?? '') }}',
                     name: '{{ old('name') ?? (session('saved_user')->name ?? '') }}',
                     email: '{{ old('email') ?? (session('saved_user')->email ?? '') }}',
                     password: '{{ old('password') ?? '' }}',
@@ -94,6 +113,7 @@
                     if (confirm('登録しますか？')) {
                         return true;
                     } else {
+                        console.log(this.login_id);
                         console.log(this.name);
                         console.log(this.email);
                         console.log(this.password);
