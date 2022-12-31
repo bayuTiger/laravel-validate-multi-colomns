@@ -20,6 +20,13 @@ php artisan serve
 
 https://qiita.com/akitika/items/837aa9a0932756eb542a
 
+### Tips. エラーメッセージの日本語化
+
+今回はバリデーションエラーのメッセージが多数表示されます
+デフォルトで英語なので、日本語にしたい方は以下の記事を参照してください↓
+
+https://qiita.com/akitika/items/381e1dc853aa12fd2d80
+
 ## 1. テーブルとmodelの定義を変更する
 
 - nameのunique属性を外して、新しくlogin_idカラムを追加します
@@ -229,3 +236,79 @@ public function store(StoreRequest $request)
 ```
 
 ## 4. ユニークバリデーション
+
+まず基本的なバリデーションとemailのunique制限をかける
+
+```php:StoreRequest.php
+public function rules(Request $request)
+{
+    $rules = [
+        'login_id' => ['required', 'string', 'max:255'],
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+        'password' => ['required']
+    ];
+
+// 更新時の処理
+    if (empty($request->email) === false) {
+      $user = User::firstWhere('email', $request->email);
+      if (is_null($user) === false) {
+         $rules['password'] = [''];
+      }
+    }
+
+    return $rules;
+}
+```
+
+これでは不十分なので、少しづつ修正していく
+
+1. login_idとname、2つのカラムに跨ったユニークバリデーションをかける
+
+```php:StoreRequest.php
+$rules = [
+    'login_id' => ['required', 'string', 'max:255', Rule::unique('users')->where(function ($query) {
+        return $query->where('name', $request->name);
+    })],
+    'name' => ['required', 'string', 'max:255', Rule::unique('users')->where(function ($query) {
+        return $query->where('login_id', $request->login_id);
+    })],
+    'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+    'password' => ['required']
+];
+```
+
+- uniqueメソッドにチェインしたwhereメソッドはクロージャを受け取ることができます
+- そこで追加のクエリを記述すると、該当するデータに対してuniqueバリデーションをかけることができます
+
+2. 更新時にユニークバリデーションを外す
+
+```php:StoreRequest.php
+// 更新時の処理
+            $user = User::firstWhere('email', $request->email);
+            if (is_null($user) === false) {
+                $rules['login_id'] = ['required', 'string', 'max:255', Rule::unique('users')->where(function ($query) use ($request) {
+                    return $query->where('name', $request->name);
+                })->ignore($user),
+                ];
+
+                $rules['name'] = ['required', 'string', 'max:255', Rule::unique('users')->where(function ($query) use ($request) {
+                        return $query->where('login_id', $request->login_id);
+                    })->ignore($user),
+                ];
+
+                $rules['email'] = ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user),
+                ];
+
+                $rules['password'] = [''];
+            }
+        }
+```
+
+- ignoreメソッドをチェインすることで、引数のモデルから自動的にキーを取り出し、そのキーに合致するデータをuniqueバリデーションから除外します
+
+## end.Githubのリポジトリ
+
+今回作成したアプリケーションは以下に公開しています↓
+
+https://github.com/bayuTiger/laravel-validate-multi-colomns
